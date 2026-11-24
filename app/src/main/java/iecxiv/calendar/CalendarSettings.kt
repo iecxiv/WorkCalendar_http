@@ -95,55 +95,86 @@ internal class CalendarSettings(private val context: Context) {
              onSave: (CalendarConfig) -> Unit): AlertDialog {
         val builder = AlertDialog.Builder(this.context)
         val context = builder.context
+        fun dp(value: Int) = (value * context.resources.displayMetrics.density + 0.5f).toInt()
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding / 2, padding, padding / 2)
+            setPadding(dp(20), dp(4), dp(20), dp(12))
+        }
+        fun section(label: Int) {
+            column.addView(AppCompatTextView(context).apply {
+                setText(label)
+                textSize = 14f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setAccessibilityHeading(true)
+                layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
+                    topMargin = dp(if (column.childCount == 0) 4 else 16)
+                    bottomMargin = dp(8)
+                }
+            })
         }
         fun field(label: Int, value: String, secret: Boolean = false): AppCompatEditText {
-            column.addView(AppCompatTextView(context).apply { setText(label) })
+            val caption = AppCompatTextView(context).apply {
+                setText(label)
+                layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(4) }
+            }
+            column.addView(caption)
             return AppCompatEditText(context).apply {
+                id = android.view.View.generateViewId()
+                caption.labelFor = id
                 inputType = InputType.TYPE_CLASS_TEXT or if (secret)
                     InputType.TYPE_TEXT_VARIATION_PASSWORD else InputType.TYPE_TEXT_VARIATION_URI
                 setSingleLine(true)
                 setText(value)
+                layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) }
                 column.addView(this)
             }
         }
+        section(R.string.settings_section_image)
         val url = field(R.string.image_url_title, current.url)
+        section(R.string.settings_section_auth)
         val basic = AppCompatCheckBox(context).apply {
+            minHeight = dp(48)
             setText(R.string.settings_basic); isChecked = current.basic; column.addView(this)
         }
         val user = field(R.string.settings_user, current.user)
         val password = field(R.string.settings_password, current.password, true)
         fun updateBasic() { user.isEnabled = basic.isChecked; password.isEnabled = basic.isChecked }
         basic.setOnCheckedChangeListener { _, _ -> updateBasic() }; updateBasic()
+        section(R.string.settings_section_headers)
         val enabledHeaders = AppCompatCheckBox(context).apply {
+            minHeight = dp(48)
             setText(R.string.settings_headers); isChecked = current.useHeaders; column.addView(this)
         }
         val rows = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; column.addView(this) }
         val inputs = mutableListOf<Pair<AppCompatEditText, AppCompatEditText>>()
         fun addHeader(name: String = "", value: String = "") {
-            val row = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+            val row = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) }
+            }
             val nameInput = AppCompatEditText(context).apply {
                 hint = context.getString(R.string.settings_header_name); setSingleLine(true); setText(name)
+                layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) }
             }
             val valueInput = AppCompatEditText(context).apply {
                 hint = context.getString(R.string.settings_header_value); setSingleLine(true)
                 inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 setText(value)
+                layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) }
             }
             val pair = nameInput to valueInput
             inputs.add(pair)
             row.addView(nameInput); row.addView(valueInput)
             row.addView(AppCompatButton(context).apply {
                 setText(R.string.settings_remove)
+                layoutParams = LinearLayout.LayoutParams(-2, -2).apply { gravity = android.view.Gravity.END }
                 setOnClickListener { inputs.remove(pair); rows.removeView(row) }
             })
             rows.addView(row)
         }
         current.headers.forEach { (name, value) -> addHeader(name, value) }
         val add = AppCompatButton(context).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) }
             setText(R.string.settings_add_header); setOnClickListener { addHeader() }; column.addView(this)
         }
         fun updateHeaders() {
@@ -151,10 +182,16 @@ internal class CalendarSettings(private val context: Context) {
             add.visibility = rows.visibility
         }
         enabledHeaders.setOnCheckedChangeListener { _, _ -> updateHeaders() }; updateHeaders()
+        section(R.string.settings_section_view)
         val remember = AppCompatCheckBox(context).apply {
+            minHeight = dp(48)
             setText(R.string.settings_remember); isChecked = current.remember; column.addView(this)
         }
-        column.addView(AppCompatTextView(context).apply { setText(R.string.settings_security) })
+        column.addView(AppCompatTextView(context).apply {
+            setText(R.string.settings_security)
+            textSize = 12f
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) }
+        })
         val dialog = builder.setTitle(R.string.settings_title)
             .setView(ScrollView(context).apply { addView(column) })
             .setPositiveButton(R.string.save, null)

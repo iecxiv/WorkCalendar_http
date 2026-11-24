@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_section_image">Image</string>
+    <string name="settings_section_auth">Authentication</string>
+    <string name="settings_section_headers">HTTP headers</string>
+    <string name="settings_section_view">View</string>
+</resources>
