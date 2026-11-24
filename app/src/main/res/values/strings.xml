@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Calendar</string>
+    <string name="image_url_title">Calendar image URL</string>
+    <string name="image_url_message">Enter the direct HTTP or HTTPS URL of your calendar image. Calendar will save it and use it for downloads and update checks.</string>
+    <string name="image_url_hint">https://example.com/calendar.jpg</string>
+    <string name="image_url_invalid">Enter a valid HTTP or HTTPS URL with a host.</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="download_error_title">Unable to load calendar</string>
+    <string name="download_error_message">The image could not be downloaded or is not a supported image. Check the URL and your connection.</string>
+    <string name="retry">Retry</string>
+    <string name="edit_url">Edit URL</string>
+    <string name="update_title">Updated calendar available</string>
+    <string name="update_message">A new version of the calendar is available on the server. Reload it now?</string>
+    <string name="reload">Reload</string>
+    <string name="later">Later</string>
+    <string name="replace_error">The image could not be saved. The previous calendar has been kept.</string>
+</resources>

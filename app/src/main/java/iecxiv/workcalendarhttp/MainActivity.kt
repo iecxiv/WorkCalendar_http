@@ -2,13 +2,18 @@ package iecxiv.workcalendarhttp
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.text.InputType
 import android.view.View
 import android.webkit.JavascriptInterface
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -22,19 +27,16 @@ import java.security.MessageDigest
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var loading: LinearLayout
-    private val imageUrl = "http://192.168.1.28:8080/calendar.jpg"
     private val imageFileName = "calendar.jpg"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-
-    private val viewStatePrefs by lazy {
-        getSharedPreferences("calendar_view_state", MODE_PRIVATE)
-    }
+    private val settings by lazy { getSharedPreferences("calendar_settings", MODE_PRIVATE) }
+    private val viewStatePrefs by lazy { getSharedPreferences("calendar_view_state", MODE_PRIVATE) }
+    private var updateDialog: AlertDialog? = null
+    private var pendingImage: File? = null
 
     private inner class CalendarViewStateBridge {
         @JavascriptInterface
-        fun getState(): String {
-            return viewStatePrefs.getString("transform", "") ?: ""
-        }
+        fun getState(): String = viewStatePrefs.getString("transform", "") ?: ""
 
         @JavascriptInterface
         fun saveState(json: String) {
@@ -54,7 +56,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 viewStatePrefs.edit().putString("transform", json).apply()
             } catch (_: Exception) {
-                // Ignore invalid state without affecting the calendar.
+                // Ignore invalid view state.
             }
         }
     }
@@ -64,11 +66,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setFinishOnTouchOutside(true)
-
-        findViewById<FrameLayout>(R.id.rootLayout).setOnClickListener {
-            finish()
-        }
-
+        findViewById<FrameLayout>(R.id.rootLayout).setOnClickListener { finish() }
         webView = findViewById(R.id.webView)
         loading = findViewById(R.id.loadingOverlay)
         webView.settings.apply {
@@ -81,161 +79,197 @@ class MainActivity : AppCompatActivity() {
         }
         webView.addJavascriptInterface(CalendarViewStateBridge(), "CalendarViewState")
         webView.webViewClient = object : WebViewClient() {
-            override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) { loading.visibility = View.VISIBLE }
-            override fun onPageFinished(view: WebView, url: String) { loading.visibility = View.GONE }
+            override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                loading.visibility = View.VISIBLE
+            }
+            override fun onPageFinished(view: WebView, url: String) {
+                loading.visibility = View.GONE
+            }
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = true
         }
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (webView.canGoBack()) webView.goBack() else finish()
-            }
+            override fun handleOnBackPressed() { finish() }
         })
-        loadApp()
+        val url = settings.getString("image_url", null)
+        if (url.isNullOrBlank()) showUrlDialog() else loadApp(url)
     }
 
-    private fun loadApp() {
-        val local = File(filesDir, imageFileName)
-        if (local.exists()) {
-            displayImage(local)
-            scope.launch(Dispatchers.IO) {
-                checkForUpdates(local)
-            }
-        } else {
-            loading.visibility = View.VISIBLE
-            scope.launch {
-                withContext(Dispatchers.IO) {
-                    downloadFile(local)
+    private fun validUrl(value: String): Boolean = try {
+        val url = URL(value)
+        val uri = url.toURI()
+        (url.protocol.equals("http", true) || url.protocol.equals("https", true)) &&
+            !uri.host.isNullOrBlank() && uri.rawUserInfo == null &&
+            (uri.port == -1 || uri.port in 1..65535)
+    } catch (_: Exception) { false }
+
+    private fun showUrlDialog(current: String = "") {
+        loading.visibility = View.GONE
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            hint = getString(R.string.image_url_hint)
+            setSingleLine(true)
+            setText(current)
+            setSelectAllOnFocus(true)
+        }
+        val padding = (24 * resources.displayMetrics.density).toInt()
+        val container = FrameLayout(this).apply {
+            setPadding(padding, 0, padding, 0)
+            addView(input)
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.image_url_title)
+            .setMessage(R.string.image_url_message)
+            .setView(container)
+            .setPositiveButton(R.string.save, null)
+            .setNegativeButton(R.string.cancel) { _, _ -> finish() }
+            .setCancelable(false)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val url = input.text.toString().trim()
+                if (!validUrl(url)) {
+                    input.error = getString(R.string.image_url_invalid)
+                } else {
+                    dialog.dismiss()
+                    loadApp(url)
                 }
-                displayImage(local)
             }
         }
+        dialog.show()
+    }
+
+    private fun loadApp(url: String) {
+        val local = File(filesDir, imageFileName)
+        val configured = settings.getString("image_url", null) == url
+        if (configured && local.exists()) {
+            displayImage(local)
+            scope.launch { checkForUpdates(url, local) }
+            return
+        }
+        loading.visibility = View.VISIBLE
+        scope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                val temp = downloadImage(url) ?: return@withContext false
+                try { temp.renameTo(local) } finally { temp.delete() }
+            }
+            if (isFinishing || isDestroyed) return@launch
+            if (saved) {
+                settings.edit().putString("image_url", url).apply()
+                displayImage(local)
+            } else {
+                showDownloadError(url)
+            }
+        }
+    }
+
+    private fun showDownloadError(url: String) {
+        loading.visibility = View.GONE
+        AlertDialog.Builder(this)
+            .setTitle(R.string.download_error_title)
+            .setMessage(R.string.download_error_message)
+            .setPositiveButton(R.string.retry) { _, _ -> loadApp(url) }
+            .setNeutralButton(R.string.edit_url) { _, _ -> showUrlDialog(url) }
+            .setNegativeButton(R.string.cancel) { _, _ -> finish() }
+            .setOnCancelListener { finish() }
+            .show()
     }
 
     private fun displayImage(file: File) {
         val html = assets.open("index.html").bufferedReader().use { it.readText() }
-        val imageUri = file.toURI().toString()
-        val htmlWithImage = html.replace("calendar.jpg", imageUri)
+        val htmlWithImage = html.replace("calendar.jpg", file.toURI().toString())
         webView.loadDataWithBaseURL("file:///android_asset/", htmlWithImage, "text/html", "UTF-8", null)
     }
 
-    private fun downloadFile(target: File) {
-        val connection = try {
-            (URL(imageUrl).openConnection() as HttpURLConnection).apply {
+    // Download beside the destination so rename can atomically replace the old image.
+    private fun downloadImage(url: String): File? {
+        var connection: HttpURLConnection? = null
+        var temp: File? = null
+        try {
+            connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 5000
                 readTimeout = 10000
                 requestMethod = "GET"
+                useCaches = false
                 setRequestProperty("Cache-Control", "no-cache")
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return
-        }
-        try {
-            val temp = File(cacheDir, "calendar.jpg.tmp")
             connection.connect()
-            if (connection.responseCode in 200..299) {
-                connection.inputStream.use { input ->
-                    temp.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-                temp.copyTo(target, overwrite = true)
-                if (temp.exists()) temp.delete()
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) return null
+            val downloaded = File.createTempFile("calendar-", ".tmp", filesDir)
+            temp = downloaded
+            connection.inputStream.use { input ->
+                downloaded.outputStream().use { output -> input.copyTo(output) }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(downloaded.absolutePath, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+            temp = null
+            return downloaded
+        } catch (_: Exception) {
+            return null
         } finally {
-            connection.disconnect()
+            connection?.disconnect()
+            temp?.delete()
         }
     }
 
-    private suspend fun checkForUpdates(local: File) {
-        val temp = File(cacheDir, "calendar.jpg.tmp")
-        val hasNewVersion = withContext(Dispatchers.IO) {
-            val connection = try {
-                (URL(imageUrl).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 5000
-                    readTimeout = 10000
-                    requestMethod = "GET"
-                    setRequestProperty("Cache-Control", "no-cache")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                return@withContext false
+    private suspend fun checkForUpdates(url: String, local: File) {
+        var temp: File? = null
+        try {
+            withContext(Dispatchers.IO) { temp = downloadImage(url) }
+            val downloaded = temp ?: return
+            val changed = withContext(Dispatchers.IO) {
+                val checksum = getFileChecksum(downloaded)
+                checksum != null && checksum != getFileChecksum(local)
             }
-
-            try {
-                connection.connect()
-                if (connection.responseCode in 200..299) {
-                    connection.inputStream.use { input ->
-                        temp.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    val localChecksum = getFileChecksum(local)
-                    val serverChecksum = getFileChecksum(temp)
-                    serverChecksum != null && serverChecksum != localChecksum
-                } else {
-                    false
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                if (temp.exists()) temp.delete()
-                false
-            } finally {
-                connection.disconnect()
-            }
-        }
-
-        if (hasNewVersion) {
-            withContext(Dispatchers.Main) {
-                if (!isFinishing && !isDestroyed) {
-                    AlertDialog.Builder(this@MainActivity)
-                        .setTitle("Calendario actualizado disponible")
-                        .setMessage("Hay una nueva versión del calendario disponible en el servidor. ¿Desea recargar?")
-                        .setPositiveButton("Recargar") { _, _ ->
-                            scope.launch(Dispatchers.IO) {
-                                if (temp.exists()) {
-                                    temp.copyTo(local, overwrite = true)
-                                    temp.delete()
-                                }
-                                withContext(Dispatchers.Main) {
-                                    displayImage(local)
-                                }
+            if (!changed || isFinishing || isDestroyed) return
+            pendingImage = downloaded
+            updateDialog = AlertDialog.Builder(this)
+                .setTitle(R.string.update_title)
+                .setMessage(R.string.update_message)
+                .setPositiveButton(R.string.reload) { _, _ ->
+                    pendingImage = null
+                    scope.launch {
+                        try {
+                            val replaced = withContext(Dispatchers.IO) { downloaded.renameTo(local) }
+                            if (!isFinishing && !isDestroyed) {
+                                if (replaced) displayImage(local)
+                                else Toast.makeText(this@MainActivity, R.string.replace_error, Toast.LENGTH_LONG).show()
                             }
-                        }
-                        .setNegativeButton("Más tarde") { _, _ ->
-                            if (temp.exists()) temp.delete()
-                        }
-                        .setOnCancelListener {
-                            if (temp.exists()) temp.delete()
-                        }
-                        .show()
-                } else {
-                    if (temp.exists()) temp.delete()
+                        } finally { downloaded.delete() }
+                    }
                 }
-            }
-        } else {
-            if (temp.exists()) temp.delete()
-        }
+                .setNegativeButton(R.string.later, null)
+                .create().also { dialog ->
+                    dialog.setOnDismissListener {
+                        pendingImage?.delete()
+                        pendingImage = null
+                        updateDialog = null
+                    }
+                    dialog.show()
+                }
+            temp = null
+        } finally { temp?.delete() }
     }
 
-    private fun getFileChecksum(file: File): String? {
-        if (!file.exists()) return null
-        return try {
-            val digest = MessageDigest.getInstance("MD5")
-            file.inputStream().use { fis ->
-                val buffer = ByteArray(8192)
-                var bytesRead: Int
-                while (fis.read(buffer).also { bytesRead = it } != -1) {
-                    digest.update(buffer, 0, bytesRead)
-                }
+    private fun getFileChecksum(file: File): String? = try {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(8192)
+            var count = input.read(buffer)
+            while (count != -1) {
+                digest.update(buffer, 0, count)
+                count = input.read(buffer)
             }
-            digest.digest().joinToString("") { "%02x".format(it) }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
         }
-    }
+        digest.digest().joinToString("") { "%02x".format(it) }
+    } catch (_: Exception) { null }
 
-    override fun onDestroy() { scope.cancel(); webView.destroy(); super.onDestroy() }
+    override fun onDestroy() {
+        scope.cancel()
+        updateDialog?.dismiss()
+        pendingImage?.delete()
+        webView.removeJavascriptInterface("CalendarViewState")
+        webView.destroy()
+        super.onDestroy()
+    }
 }

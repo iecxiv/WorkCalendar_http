@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_url_title">URL de la imagen del calendario</string>
+    <string name="image_url_message">Introduce la URL directa HTTP o HTTPS de la imagen del calendario. Calendar la guardará y la usará para las descargas y la búsqueda de actualizaciones.</string>
+    <string name="image_url_hint">https://example.com/calendar.jpg</string>
+    <string name="image_url_invalid">Introduce una URL HTTP o HTTPS válida con un servidor.</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="download_error_title">No se puede cargar el calendario</string>
+    <string name="download_error_message">No se ha podido descargar la imagen o su formato no es compatible. Comprueba la URL y la conexión.</string>
+    <string name="retry">Reintentar</string>
+    <string name="edit_url">Editar URL</string>
+    <string name="update_title">Calendario actualizado disponible</string>
+    <string name="update_message">Hay una nueva versión del calendario disponible en el servidor. ¿Quieres recargarla ahora?</string>
+    <string name="reload">Recargar</string>
+    <string name="later">Más tarde</string>
+    <string name="replace_error">No se ha podido guardar la imagen. Se ha conservado el calendario anterior.</string>
+</resources>
