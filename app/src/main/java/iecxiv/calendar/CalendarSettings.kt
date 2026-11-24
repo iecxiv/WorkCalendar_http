@@ -87,9 +87,8 @@ internal class CalendarSettings(private val context: Context) {
 
     fun show(current: CalendarConfig, firstRun: Boolean, onCancel: () -> Unit,
              onSave: (CalendarConfig) -> Unit): AlertDialog {
-        val context = androidx.appcompat.view.ContextThemeWrapper(
-            this.context, R.style.ThemeOverlay_Calendar_SettingsDialog
-        )
+        val builder = AlertDialog.Builder(this.context, R.style.ThemeOverlay_Calendar_SettingsDialog)
+        val context = builder.context
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             val padding = (20 * resources.displayMetrics.density).toInt()
@@ -150,7 +149,7 @@ internal class CalendarSettings(private val context: Context) {
             setText(R.string.settings_remember); isChecked = current.remember; column.addView(this)
         }
         column.addView(TextView(context).apply { setText(R.string.settings_security) })
-        val dialog = AlertDialog.Builder(context, R.style.ThemeOverlay_Calendar_SettingsDialog).setTitle(R.string.settings_title)
+        val dialog = builder.setTitle(R.string.settings_title)
             .setView(ScrollView(context).apply { addView(column) })
             .setPositiveButton(R.string.save, null)
             .setNegativeButton(R.string.cancel) { _, _ -> onCancel() }
