@@ -6,8 +6,14 @@ import android.security.keystore.KeyProperties
 import android.text.InputType
 import android.util.AtomicFile
 import android.util.Base64
-import android.widget.*
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.AppCompatButton
+import androidx.appcompat.widget.AppCompatCheckBox
+import androidx.appcompat.widget.AppCompatEditText
+import androidx.appcompat.widget.AppCompatTextView
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -125,9 +131,9 @@ internal class CalendarSettings(private val context: Context) {
             val padding = (20 * resources.displayMetrics.density).toInt()
             setPadding(padding, padding / 2, padding, padding / 2)
         }
-        fun field(label: Int, value: String, secret: Boolean = false): EditText {
-            column.addView(TextView(context).apply { setText(label) })
-            return EditText(context).apply {
+        fun field(label: Int, value: String, secret: Boolean = false): AppCompatEditText {
+            column.addView(AppCompatTextView(context).apply { setText(label) })
+            return AppCompatEditText(context).apply {
                 inputType = InputType.TYPE_CLASS_TEXT or if (secret)
                     InputType.TYPE_TEXT_VARIATION_PASSWORD else InputType.TYPE_TEXT_VARIATION_URI
                 setSingleLine(true)
@@ -136,24 +142,24 @@ internal class CalendarSettings(private val context: Context) {
             }
         }
         val url = field(R.string.image_url_title, current.url)
-        val basic = CheckBox(context).apply {
+        val basic = AppCompatCheckBox(context).apply {
             setText(R.string.settings_basic); isChecked = current.basic; column.addView(this)
         }
         val user = field(R.string.settings_user, current.user)
         val password = field(R.string.settings_password, current.password, true)
         fun updateBasic() { user.isEnabled = basic.isChecked; password.isEnabled = basic.isChecked }
         basic.setOnCheckedChangeListener { _, _ -> updateBasic() }; updateBasic()
-        val enabledHeaders = CheckBox(context).apply {
+        val enabledHeaders = AppCompatCheckBox(context).apply {
             setText(R.string.settings_headers); isChecked = current.useHeaders; column.addView(this)
         }
         val rows = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; column.addView(this) }
-        val inputs = mutableListOf<Pair<EditText, EditText>>()
+        val inputs = mutableListOf<Pair<AppCompatEditText, AppCompatEditText>>()
         fun addHeader(name: String = "", value: String = "") {
             val row = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-            val nameInput = EditText(context).apply {
+            val nameInput = AppCompatEditText(context).apply {
                 hint = context.getString(R.string.settings_header_name); setSingleLine(true); setText(name)
             }
-            val valueInput = EditText(context).apply {
+            val valueInput = AppCompatEditText(context).apply {
                 hint = context.getString(R.string.settings_header_value); setSingleLine(true)
                 inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 setText(value)
@@ -161,14 +167,14 @@ internal class CalendarSettings(private val context: Context) {
             val pair = nameInput to valueInput
             inputs.add(pair)
             row.addView(nameInput); row.addView(valueInput)
-            row.addView(Button(context).apply {
+            row.addView(AppCompatButton(context).apply {
                 setText(R.string.settings_remove)
                 setOnClickListener { inputs.remove(pair); rows.removeView(row) }
             })
             rows.addView(row)
         }
         current.headers.forEach { (name, value) -> addHeader(name, value) }
-        val add = Button(context).apply {
+        val add = AppCompatButton(context).apply {
             setText(R.string.settings_add_header); setOnClickListener { addHeader() }; column.addView(this)
         }
         fun updateHeaders() {
@@ -176,10 +182,10 @@ internal class CalendarSettings(private val context: Context) {
             add.visibility = rows.visibility
         }
         enabledHeaders.setOnCheckedChangeListener { _, _ -> updateHeaders() }; updateHeaders()
-        val remember = CheckBox(context).apply {
+        val remember = AppCompatCheckBox(context).apply {
             setText(R.string.settings_remember); isChecked = current.remember; column.addView(this)
         }
-        column.addView(TextView(context).apply { setText(R.string.settings_security) })
+        column.addView(AppCompatTextView(context).apply { setText(R.string.settings_security) })
         val dialog = builder.setTitle(R.string.settings_title)
             .setView(ScrollView(context).apply { addView(column) })
             .setPositiveButton(R.string.save, null)
