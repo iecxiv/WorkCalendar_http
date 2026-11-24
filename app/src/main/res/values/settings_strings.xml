@@ -10,7 +10,7 @@
     <string name="settings_add_header">Add header</string>
     <string name="settings_remove">Remove header</string>
     <string name="settings_remember">Remember zoom, pan and rotation</string>
-    <string name="settings_security">Use HTTPS: HTTP sends credentials unencrypted. Redirects to a different origin are blocked. Settings are encrypted on this device. Disabling Remember clears the saved view.</string>
+    <string name="settings_security">To reopen settings, tap all four corners of the image viewer frame, in any order, within five seconds.\n\nUse HTTPS: HTTP sends credentials unencrypted. Redirects to a different origin are blocked. Settings are encrypted on this device. Disabling Remember clears the saved view.</string>
     <string name="settings_invalid_user">The username cannot contain a colon or line breaks.</string>
     <string name="settings_invalid_headers">Check header names and values. Names must use letters, numbers, hyphens or underscores. Duplicates, control characters and transport headers are not allowed. Disable Basic authentication to set Authorization manually.</string>
     <string name="settings_storage_error">Unable to read or save encrypted settings. Check the configuration and try again.</string>

@@ -10,7 +10,7 @@
     <string name="settings_add_header">Añadir header</string>
     <string name="settings_remove">Eliminar header</string>
     <string name="settings_remember">Recordar zoom, desplazamiento y rotación</string>
-    <string name="settings_security">Usa HTTPS: HTTP transmite las credenciales sin cifrar. Se bloquean las redirecciones a otro origen. Los ajustes se cifran en este dispositivo. Desactivar Recordar borra la vista guardada.</string>
+    <string name="settings_security">Para volver a abrir los ajustes, toca las cuatro esquinas del recuadro de la imagen, en cualquier orden, dentro de cinco segundos.\n\nUsa HTTPS: HTTP transmite las credenciales sin cifrar. Se bloquean las redirecciones a otro origen. Los ajustes se cifran en este dispositivo. Desactivar Recordar borra la vista guardada.</string>
     <string name="settings_invalid_user">El usuario no puede contener dos puntos ni saltos de línea.</string>
     <string name="settings_invalid_headers">Revisa los nombres y valores de los headers. Los nombres admiten letras, números, guiones y guiones bajos. No se permiten duplicados, caracteres de control ni headers de transporte. Desactiva Basic para definir Authorization manualmente.</string>
     <string name="settings_storage_error">No se han podido leer o guardar los ajustes cifrados. Revisa la configuración e inténtalo de nuevo.</string>
