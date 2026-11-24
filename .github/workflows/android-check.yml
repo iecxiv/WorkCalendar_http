@@ -1,0 +1,54 @@
+name: Android checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install compile SDK
+        run: sdkmanager 'platforms;android-35'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK and run lint
+        run: bash ./gradlew --no-daemon --stacktrace --continue :app:assembleDebug :app:lintDebug
+
+      - name: Upload debug APK and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-check-${{ github.run_number }}
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
+          retention-days: 7
