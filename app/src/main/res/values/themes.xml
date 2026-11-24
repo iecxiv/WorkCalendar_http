@@ -8,8 +8,10 @@
     </style>
 
     <style name="Theme.CalendarDialog" parent="Theme.AppCompat.DayNight.Dialog.Alert">
-        <item name="colorAccent">#009688</item>
-        <item name="android:colorAccent">#009688</item>
+        <item name="colorAccent">@color/calendar_accent</item>
+        <item name="android:colorAccent">@color/calendar_accent</item>
+        <item name="android:colorBackground">@color/calendar_surface</item>
+        <item name="android:colorBackgroundFloating">@color/calendar_surface</item>
         <item name="android:windowBackground">@drawable/calendar_dialog_background</item>
         <item name="editTextStyle">@style/Widget.Calendar.EditText</item>
         <item name="buttonStyle">@style/Widget.Calendar.Button</item>

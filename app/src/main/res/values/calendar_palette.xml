@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="calendar_accent">#00796B</color>
+    <color name="calendar_surface">#FAFAFA</color>
+    <color name="calendar_outline">#D0D5D4</color>
+</resources>
