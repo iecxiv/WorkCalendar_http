@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "iecxiv.workcalendarhttp"
+    namespace = "iecxiv.calendar"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "iecxiv.workcalendarhttp"
+        applicationId = "iecxiv.calendar"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

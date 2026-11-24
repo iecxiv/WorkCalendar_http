@@ -2,7 +2,7 @@
 
 ## English
 
-Android viewer for a remote calendar image, with a private offline copy. Application ID: `iecxiv.workcalendarhttp`. Requires Android 8.0 / API 26 or newer.
+Android viewer for a remote calendar image, with a private offline copy. Application ID: `iecxiv.calendar`. Requires Android 8.0 / API 26 or newer.
 
 ### Setup and settings
 
@@ -32,7 +32,7 @@ bash ./gradlew :app:assembleDebug
 
 ## Español
 
-Visor Android de una imagen remota de calendario con copia privada sin conexión. Identificador: `iecxiv.workcalendarhttp`. Requiere Android 8.0 / API 26 o posterior.
+Visor Android de una imagen remota de calendario con copia privada sin conexión. Identificador: `iecxiv.calendar`. Requiere Android 8.0 / API 26 o posterior.
 
 ### Configuración y ajustes
 

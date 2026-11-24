@@ -1,4 +1,4 @@
-package iecxiv.workcalendarhttp
+package iecxiv.calendar
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
