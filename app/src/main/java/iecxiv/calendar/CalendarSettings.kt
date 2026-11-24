@@ -87,8 +87,39 @@ internal class CalendarSettings(private val context: Context) {
 
     fun show(current: CalendarConfig, firstRun: Boolean, onCancel: () -> Unit,
              onSave: (CalendarConfig) -> Unit): AlertDialog {
+        val debugTheme = (this.context.applicationInfo.flags and
+            android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        val trace = "${android.os.Process.myPid()}:${System.identityHashCode(Any())}"
+        fun logTheme(stage: String, target: Context) {
+            if (!debugTheme) return
+            try {
+                fun resourceName(id: Int): String = if (id == 0) "none" else
+                    runCatching { target.resources.getResourceName(id) }.getOrDefault("0x${id.toUInt().toString(16)}")
+                val night = target.resources.configuration.uiMode and
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                android.util.Log.d("CalendarTheme", "$trace $stage context=${target.javaClass.name}@${System.identityHashCode(target)} night=$night requested=${resourceName(R.style.ThemeOverlay_Calendar_SettingsDialog)}")
+                val attributes = listOf(
+                    "windowBackground" to android.R.attr.windowBackground,
+                    "android.colorAccent" to android.R.attr.colorAccent,
+                    "appcompat.colorAccent" to androidx.appcompat.R.attr.colorAccent,
+                    "textColorPrimary" to android.R.attr.textColorPrimary,
+                    "buttonStyle" to android.R.attr.buttonStyle,
+                    "positiveButtonStyle" to androidx.appcompat.R.attr.buttonBarPositiveButtonStyle
+                )
+                for ((name, attr) in attributes) {
+                    val value = android.util.TypedValue()
+                    val found = target.theme.resolveAttribute(attr, value, true)
+                    android.util.Log.d("CalendarTheme", "$trace $stage $name found=$found type=${value.type} data=0x${value.data.toUInt().toString(16)} resource=${resourceName(value.resourceId)}")
+                }
+                android.util.Log.d("CalendarTheme", "$trace $stage expectedSurface=0x${target.getColor(R.color.calendar_dialog_surface).toUInt().toString(16)} expectedAccent=0x${target.getColor(R.color.calendar_dialog_primary).toUInt().toString(16)}")
+            } catch (error: Exception) {
+                android.util.Log.d("CalendarTheme", "$trace $stage diagnosticError=${error.javaClass.name}")
+            }
+        }
+        logTheme("base-before-builder", this.context)
         val builder = AlertDialog.Builder(this.context, R.style.ThemeOverlay_Calendar_SettingsDialog)
         val context = builder.context
+        logTheme("builder", context)
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             val padding = (20 * resources.displayMetrics.density).toInt()
@@ -190,7 +221,17 @@ internal class CalendarSettings(private val context: Context) {
                 dialog.dismiss(); onSave(config)
             }
         }
+        logTheme("dialog-before-show", dialog.context)
         dialog.show()
+        if (debugTheme) {
+            dialog.window?.decorView?.post {
+                if (dialog.isShowing) {
+                    logTheme("dialog-after-show", dialog.context)
+                    val button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    android.util.Log.d("CalendarTheme", "$trace rendered decorBackground=${dialog.window?.decorView?.background?.javaClass?.name} button=${button.javaClass.name} buttonColor=0x${button.currentTextColor.toUInt().toString(16)} transformation=${button.transformationMethod?.javaClass?.name} field=${url.javaClass.name} fieldColor=0x${url.currentTextColor.toUInt().toString(16)}")
+                }
+            }
+        }
         return dialog
     }
 }
