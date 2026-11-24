@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+    #container {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      touch-action: none;
+    }
+    img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <img id="zoom" src="calendar.jpg">
+  </div>
+  <script src="zoom.js"></script>
+  <script>
+    let zoomInstance = null;
+    function initZoom() {
+      if (zoomInstance) return;
+      const elem = document.getElementById('zoom');
+      if (typeof Zoom !== 'undefined' && elem) {
+        zoomInstance = new Zoom(elem, {
+          rotate: true,
+          minZoom: 0.5,
+          maxZoom: 10
+        });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initZoom);
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+      initZoom();
+    }
+  </script>
+</body>
+</html>
