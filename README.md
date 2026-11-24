@@ -1,85 +1,61 @@
 # Calendar
 
-A small Android app that displays a remote calendar image in a zoomable viewer and keeps a private offline copy.
-
 ## English
 
-### Features
+Android viewer for a remote calendar image, with a private offline copy. Application ID: `iecxiv.workcalendarhttp`. Requires Android 8.0 / API 26 or newer.
 
-- First-run setup for a direct HTTP or HTTPS image URL; no hardcoded server address.
-- The URL is saved after the first successful image download and reused for initial downloads and update checks.
-- Cached image shown immediately on subsequent launches, including while offline.
-- Remote image downloaded and compared by SHA-256 when opening the app; a dialog offers to reload if its contents changed. This is a launch-time check, not a background polling service.
-- Failed downloads and invalid image responses do not replace the existing calendar.
-- Pinch zoom, pan and rotation; the view transformation is saved and restored across launches. Double-tap resets the view.
-- English by default; Spanish UI on devices using Spanish. The app name is Calendar in both languages.
+### Setup and settings
 
-### Setup and usage
+On first launch, enter a direct HTTP/HTTPS image URL, optionally enable HTTP Basic authentication (username/password) and/or custom HTTP headers, then save. Settings are saved before downloading, so failures can be retried or corrected.
 
-1. Open Calendar and enter a direct URL, for example `https://example.com/calendar.jpg`. Use an image format supported by Android, such as JPEG or PNG, not a web page or a PDF.
-2. Tap **Save**. If downloading fails, retry or edit the URL.
-3. After a successful download, the URL is stored in private app preferences. It survives app restarts and in-place updates. Clearing app data or uninstalling removes it; reinstalling may restore data if Android backup is available.
-4. On later launches the saved image opens immediately. If the remote content changed, choose **Reload** or **Later**.
+To reopen settings, tap each of the four corners of the image viewer frame once, in any order, within five seconds. Repeated corners do not count twice; drags, pinches and long presses do not count as taps. Each corner has a touch area of up to 48 dp. This gesture is a shortcut, not an authentication mechanism.
 
-Existing installations without a configured URL are also prompted once, even if they already have an image cached from the previous hardcoded server. The old image is only replaced after a valid download.
+- Add and remove custom header name/value pairs, including Authorization for bearer tokens when Basic is disabled.
+- Basic and custom headers are applied to both initial downloads and update checks. Duplicate headers, control characters, selected transport headers and conflicting Authorization settings are rejected.
+- Remember zoom, pan and rotation is enabled by default. Disable it to clear the saved view and start subsequent openings at the default view. Gestures remain available.
+- Configuration is encrypted with an Android Keystore key and stored outside Android backup. It survives in-place updates, but not clearing app data or uninstalling. View state and cached image are private app data.
+- Prefer HTTPS. HTTP sends credentials without transport encryption. Redirects are followed only within the same scheme, host and effective port, up to five redirects.
 
-There is currently no settings screen to change a successfully saved URL. Clearing app data restarts setup, but also removes the cached image and saved view.
+### Image behavior
 
-### Network and privacy
+The cached image is displayed immediately when it belongs to the configured URL. Each launch checks the remote image using the saved URL and authentication, compares SHA-256 and offers Reload/Later if it changed. Saving settings triggers an immediate refresh. Failed downloads do not overwrite the old file. Requests have timeouts and downloads are limited to 30 MiB. Supply an Android-supported raster image, such as JPEG or PNG, not HTML or PDF. There is no periodic background service.
 
-HTTP is supported for local/self-hosted servers, but it is unencrypted; prefer HTTPS when possible. The server must be reachable from the device, for example through the same LAN or a VPN. URLs containing embedded username/password credentials are not accepted. The URL and downloaded image are stored in the private app data directory; the URL is not a secret vault.
+Pinch to zoom/rotate and drag to pan. Double-tap resets the view. English is the default UI language; Spanish resources are included.
 
 ### Build
 
-Application ID and namespace: `iecxiv.workcalendarhttp`.
-
-Use Android Studio with JDK 17 and the Android SDK required by the Gradle project, or run:
+Use Android Studio with JDK 17 and the SDK required by Gradle, or run:
 
 ```bash
 bash ./gradlew :app:assembleDebug
 ```
-
-Android 8.0 (API 26) or newer is required.
-
----
 
 ## Español
 
-Aplicación Android sencilla que muestra la imagen remota de un calendario con zoom y conserva una copia privada para consultarla sin conexión.
+Visor Android de una imagen remota de calendario con copia privada sin conexión. Identificador: `iecxiv.workcalendarhttp`. Requiere Android 8.0 / API 26 o posterior.
 
-### Funciones
+### Configuración y ajustes
 
-- Configuración inicial de una URL directa HTTP o HTTPS, sin una dirección de servidor fija en el código.
-- La URL se guarda tras la primera descarga válida y se reutiliza para las descargas iniciales y la búsqueda de actualizaciones.
-- La imagen guardada se muestra inmediatamente en los siguientes inicios, también sin conexión.
-- Al abrir la app se descarga la imagen remota y se compara mediante SHA-256. Si cambia su contenido, se ofrece recargarla. No hay un servicio de sondeo en segundo plano.
-- Las descargas fallidas o las respuestas que no sean imágenes válidas no sustituyen el calendario existente.
-- Zoom con dos dedos, desplazamiento y rotación; la vista se guarda y restaura entre aperturas. El doble toque restablece la vista.
-- Interfaz en español cuando el dispositivo utiliza español; inglés como idioma predeterminado. El nombre es Calendar en ambos idiomas.
+En el primer inicio introduce una URL directa HTTP/HTTPS de la imagen. Opcionalmente activa HTTP Basic con usuario y contraseña y/o headers HTTP personalizados y guarda. Los ajustes se guardan antes de descargar, de modo que los fallos pueden reintentarse o corregirse.
 
-### Configuración y uso
+Para abrir los ajustes toca una vez cada una de las cuatro esquinas del recuadro del visor, en cualquier orden, dentro de cinco segundos. Repetir una esquina no suma; arrastres, pellizcos y pulsaciones largas no cuentan. Cada esquina tiene un área táctil de hasta 48 dp. El gesto es un acceso directo, no una medida de autenticación.
 
-1. Abre Calendar e introduce una URL directa, por ejemplo `https://example.com/calendar.jpg`. Usa una imagen compatible con Android, como JPEG o PNG, no una página web ni un PDF.
-2. Pulsa **Guardar**. Si falla la descarga, puedes reintentar o editar la URL.
-3. Tras descargar correctamente, la URL se guarda en las preferencias privadas de la app. Se conserva al cerrar y al actualizar la aplicación. Borrar los datos o desinstalar la elimina; una reinstalación podría restaurar los datos si existe una copia de seguridad de Android.
-4. En los siguientes inicios aparece la imagen guardada. Si cambia el contenido remoto, elige **Recargar** o **Más tarde**.
+- Permite añadir y eliminar pares nombre/valor de headers, incluido Authorization para tokens bearer si Basic está desactivado.
+- Basic y los headers se aplican tanto a la descarga inicial como a la búsqueda de actualizaciones. Se rechazan duplicados, caracteres de control, determinados headers de transporte y conflictos con Authorization.
+- Recordar zoom, desplazamiento y rotación está activado por defecto. Al desactivarlo se borra la vista guardada y las siguientes aperturas empiezan con la vista predeterminada. Los gestos siguen disponibles.
+- La configuración se cifra con una clave de Android Keystore y se excluye de las copias de seguridad de Android. Se conserva al actualizar, pero no al borrar datos o desinstalar. La vista y la imagen local son datos privados de la app.
+- Usa HTTPS preferentemente. HTTP transmite credenciales sin cifrado de transporte. Solo se siguen redirecciones con el mismo protocolo, servidor y puerto efectivo, hasta cinco saltos.
 
-Las instalaciones anteriores sin URL configurada también la solicitan una vez, aunque tengan una imagen del servidor fijo anterior. Esa imagen solo se sustituye tras una descarga válida.
+### Comportamiento de la imagen
 
-Actualmente no hay una pantalla de ajustes para cambiar una URL guardada correctamente. Borrar los datos reinicia la configuración, pero también elimina la imagen local y la vista guardada.
+La copia local se muestra inmediatamente si corresponde a la URL configurada. Cada inicio comprueba la imagen remota con la URL y autenticación guardadas, compara SHA-256 y ofrece Recargar/Más tarde si cambia. Guardar ajustes fuerza una actualización inmediata. Una descarga fallida no sobrescribe el archivo anterior. Hay tiempos de espera y un límite de 30 MiB por descarga. Usa una imagen raster compatible con Android, como JPEG o PNG, no HTML ni PDF. No hay servicio periódico en segundo plano.
 
-### Red y privacidad
-
-Se admite HTTP para servidores locales o autogestionados, pero no cifra el tráfico; utiliza HTTPS cuando sea posible. El servidor debe ser accesible desde el dispositivo, por ejemplo mediante la misma red local o una VPN. No se admiten URLs con usuario y contraseña integrados. La URL y la imagen se guardan en los datos privados de la aplicación; la URL no se almacena en una caja fuerte de secretos.
+Pellizca para ampliar o girar y arrastra para desplazar. El doble toque restablece la vista. Inglés como idioma predeterminado y recursos en español incluidos.
 
 ### Compilación
 
-Identificador y namespace: `iecxiv.workcalendarhttp`.
-
-Usa Android Studio con JDK 17 y el SDK requerido por el proyecto Gradle, o ejecuta:
+Usa Android Studio con JDK 17 y el SDK requerido por Gradle, o ejecuta:
 
 ```bash
 bash ./gradlew :app:assembleDebug
 ```
-
-Requiere Android 8.0 (API 26) o posterior.
