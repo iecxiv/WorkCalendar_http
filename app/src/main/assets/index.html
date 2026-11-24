@@ -37,18 +37,91 @@
   <script src="zoom.js"></script>
   <script>
     let zoomInstance = null;
-    function initZoom() {
-      if (zoomInstance) return;
-      const elem = document.getElementById('zoom');
-      if (typeof Zoom !== 'undefined' && elem) {
-        zoomInstance = new Zoom(elem, {
-          rotate: true,
-          minZoom: 0.5,
-          maxZoom: 10
-        });
+    let saveTimer = null;
+    let lastSavedState = null;
+
+    function validState(state) {
+      return state &&
+        Array.isArray(state.A) && state.A.length === 2 &&
+        state.A.every(row => Array.isArray(row) &&
+          row.length === 2 && row.every(Number.isFinite)) &&
+        Array.isArray(state.b) && state.b.length === 2 &&
+        state.b.every(Number.isFinite);
+    }
+
+    function saveViewState() {
+      if (saveTimer !== null) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      if (!zoomInstance || typeof CalendarViewState === 'undefined') return;
+      const transform = zoomInstance.resultantZoom;
+      const state = { A: transform.A, b: transform.b };
+      if (!validState(state)) return;
+      const json = JSON.stringify(state);
+      if (json === lastSavedState) return;
+      try {
+        CalendarViewState.saveState(json);
+        lastSavedState = json;
+      } catch (error) {
+        console.warn('No se pudo guardar la vista', error);
       }
     }
 
+    function scheduleSave() {
+      if (saveTimer !== null) return;
+      saveTimer = setTimeout(saveViewState, 150);
+    }
+
+    function restoreViewState() {
+      if (typeof CalendarViewState === 'undefined') return;
+      try {
+        const json = CalendarViewState.getState();
+        if (!json) return;
+        const state = JSON.parse(json);
+        if (!validState(state)) return;
+        const transform = new Transform(state.A, state.b);
+        zoomInstance.activeZoom = transform;
+        zoomInstance.resultantZoom = transform;
+        zoomInstance.repaint();
+        lastSavedState = json;
+      } catch (error) {
+        console.warn('No se pudo restaurar la vista', error);
+      }
+    }
+
+    function initZoom() {
+      if (zoomInstance) return;
+      const elem = document.getElementById('zoom');
+      if (typeof Zoom === 'undefined' || !elem) return;
+      if (!elem.complete) {
+        elem.addEventListener('load', initZoom, { once: true });
+        return;
+      }
+      if (elem.naturalWidth === 0) return;
+      zoomInstance = new Zoom(elem, {
+        rotate: true,
+        minZoom: 0.5,
+        maxZoom: 10
+      });
+      restoreViewState();
+      const originalRepaint = zoomInstance.repaint;
+      zoomInstance.repaint = function() {
+        originalRepaint.call(this);
+        scheduleSave();
+      };
+      zoomInstance.elemParent.addEventListener(
+        'touchend', saveViewState, { passive: true }
+      );
+      zoomInstance.elemParent.addEventListener(
+        'touchcancel', saveViewState, { passive: true }
+      );
+    }
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden') saveViewState();
+    });
+    window.addEventListener('pagehide', saveViewState);
     document.addEventListener('DOMContentLoaded', initZoom);
     if (document.readyState === 'interactive' || document.readyState === 'complete') {
       initZoom();

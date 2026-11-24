@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
@@ -12,6 +13,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.*
+import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -23,6 +25,39 @@ class MainActivity : AppCompatActivity() {
     private val imageUrl = "http://192.168.1.28:8080/calendar.jpg"
     private val imageFileName = "calendar.jpg"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    private val viewStatePrefs by lazy {
+        getSharedPreferences("calendar_view_state", MODE_PRIVATE)
+    }
+
+    private inner class CalendarViewStateBridge {
+        @JavascriptInterface
+        fun getState(): String {
+            return viewStatePrefs.getString("transform", "") ?: ""
+        }
+
+        @JavascriptInterface
+        fun saveState(json: String) {
+            if (json.length > 2048) return
+            try {
+                val state = JSONObject(json)
+                val matrix = state.getJSONArray("A")
+                val translation = state.getJSONArray("b")
+                if (matrix.length() != 2 || translation.length() != 2) return
+                for (row in 0..1) {
+                    val values = matrix.getJSONArray(row)
+                    if (values.length() != 2) return
+                    for (column in 0..1) {
+                        if (!values.getDouble(column).isFinite()) return
+                    }
+                    if (!translation.getDouble(row).isFinite()) return
+                }
+                viewStatePrefs.edit().putString("transform", json).apply()
+            } catch (_: Exception) {
+                // Ignore invalid state without affecting the calendar.
+            }
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +79,7 @@ class MainActivity : AppCompatActivity() {
             useWideViewPort = true
             loadWithOverviewMode = true
         }
+        webView.addJavascriptInterface(CalendarViewStateBridge(), "CalendarViewState")
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) { loading.visibility = View.VISIBLE }
             override fun onPageFinished(view: WebView, url: String) { loading.visibility = View.GONE }
