@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget.Calendar.DialogAction" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingRight">12dp</item>
+    </style>
+    <style name="Widget.Calendar.DialogAction.Primary" parent="Widget.Calendar.DialogAction">
+        <item name="android:textColor">@color/calendar_button_text</item>
+    </style>
+    <style name="Widget.Calendar.DialogAction.Secondary" parent="Widget.Calendar.DialogAction">
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+</resources>
