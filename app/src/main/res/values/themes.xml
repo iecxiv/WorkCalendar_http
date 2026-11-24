@@ -11,5 +11,7 @@
         <item name="colorAccent">#009688</item>
         <item name="android:colorAccent">#009688</item>
         <item name="android:windowBackground">@drawable/calendar_dialog_background</item>
+        <item name="editTextStyle">@style/Widget.Calendar.EditText</item>
+        <item name="buttonStyle">@style/Widget.Calendar.Button</item>
     </style>
 </resources>
