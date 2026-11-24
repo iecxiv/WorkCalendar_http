@@ -105,7 +105,7 @@ internal class CalendarSettings(private val context: Context) {
                 setText(label)
                 textSize = 14f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
-                setAccessibilityHeading(true)
+                androidx.core.view.ViewCompat.setAccessibilityHeading(this, true)
                 layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
                     topMargin = dp(if (column.childCount == 0) 4 else 16)
                     bottomMargin = dp(8)
